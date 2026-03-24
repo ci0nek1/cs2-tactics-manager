@@ -22,3 +22,19 @@ class TacticsManager:
                 }
             ]
             self.collection.insert_many(sample_entries)
+
+    def list_all(self):
+        return list(self.collection.find({}, {"_id": 0}))
+
+    def get_next_id(self):
+        last_entry = self.collection.find_one(sort=[("id", -1)])
+        if last_entry and "id" in last_entry:
+            return last_entry["id"] + 1
+        return 1
+
+    def add_entry(self, entry):
+        if not entry.get("id"):
+            entry["id"] = self.get_next_id()
+
+        self.collection.insert_one(entry.copy())
+        return entry
