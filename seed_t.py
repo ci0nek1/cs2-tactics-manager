@@ -1,7 +1,7 @@
-# seed_t.py
+
 from crud import insert_tactic
 
-# Struktura: { "Nazwa Mapy": [ ("Ekonomia", "Opis taktyki"), ... ] }
+
 T_TACTICS = {
     "Mirage": [
         ("Pistol round",
