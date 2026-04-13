@@ -1,40 +1,72 @@
-import random
-from pymongo import MongoClient
 
-class TacticsManager:
-    def __init__(self, uri="mongodb://localhost:27017/", db_name="cs2_tactics", collection_name="tactics"):
-        self.client = MongoClient(uri)
-        self.db = self.client[db_name]
-        self.collection = self.db[collection_name]
-        self.ensure_db_exists()
+import sys
+from crud import get_id, get_random_tactic
 
-    def ensure_db_exists(self):
-        # Jeśli baza jest pusta, dodaj przykładowe dane
-        if self.collection.count_documents({}) == 0:
-            sample_entries = [
-                {
-                    "id": 1, "map": "Mirage", "category": "Tactic", "side": "T", "economy": "Full",
-                    "title": "Split A", "description": "Szybki wjazd na A.", "url": "link_do_yt"
-                },
-                {
-                    "id": 2, "map": "Mirage", "category": "Grenade", "type": "Smoke", "side": None, "economy": None,
-                    "title": "Window smoke", "description": "Celuj w antenę.", "url": "link_do_zdjecia"
-                }
-            ]
-            self.collection.insert_many(sample_entries)
+MAPS = ["Mirage", "Inferno", "Nuke", "Dust II", "Ancient", "Anubis", "Train"]
+SIDES = ["CT", "T"]
+ECONOMY = ["Pistol round", "Eco round", "Half buy", "Full buy"]
 
-    def list_all(self):
-        return list(self.collection.find({}, {"_id": 0}))
 
-    def get_next_id(self):
-        last_entry = self.collection.find_one(sort=[("id", -1)])
-        if last_entry and "id" in last_entry:
-            return last_entry["id"] + 1
-        return 1
+def get_choice(options, prompt):
+    while True:
+        print(f"\n{prompt}")
+        for i, opt in enumerate(options, 1):
+            print(f"{i}. {opt}")
+        print("0. Wyjście / Powrót")
 
-    def add_entry(self, entry):
-        if not entry.get("id"):
-            entry["id"] = self.get_next_id()
+        choice = input("Twój wybór: ")
+        if choice == '0':
+            return None
 
-        self.collection.insert_one(entry.copy())
-        return entry
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(options):
+                return options[idx]
+            else:
+                print("\n[BŁĄD] Nieprawidłowy wybór. Spróbuj ponownie.")
+        except ValueError:
+            print("\n[BŁĄD] Proszę wpisać cyfrę.")
+
+
+def main():
+    while True:
+        print("\n" + "=" * 30)
+        print("=== CS2 Strat Roulette Pro ===")
+        print("=" * 30)
+
+        selected_map = get_choice(MAPS, "Wybierz mapę:")
+        if not selected_map:
+            print("Wychodzenie z programu... GG!")
+            sys.exit(0)
+
+        selected_side = get_choice(SIDES, f"Wybrano: {selected_map}. Wybierz stronę:")
+        if not selected_side:
+            continue
+
+        selected_eco = get_choice(ECONOMY, f"Wybrano: {selected_map} | {selected_side}. Wybierz ekonomię:")
+        if not selected_eco:
+            continue
+
+        print("\n" + "*" * 50)
+        print(f" GENEROWANIE TAKTYKI: {selected_map} | {selected_side} | {selected_eco}")
+        print("*" * 50)
+
+
+        map_id = get_id('maps', selected_map)
+        side_id = get_id('sides', selected_side)
+        eco_id = get_id('economy', selected_eco)
+
+
+        tactic = get_random_tactic(map_id, side_id, eco_id)
+
+        if tactic:
+            print(f"\n[ OPIS TAKTYKI ]:\n\n{tactic}")
+        else:
+            print("\n[ BŁĄD ]: Brak taktyki dla zadanych kryteriów w bazie danych.")
+
+        print("\n" + "*" * 50)
+        input("Naciśnij [ENTER], aby wylosować kolejną taktykę...")
+
+
+if __name__ == "__main__":
+    main()
